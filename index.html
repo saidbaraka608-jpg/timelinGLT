@@ -1,302 +1,296 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" id="mainHtml">
 <head>
-    <link rel="manifest" href="manifest.json">
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Offline Ready!'))
-                    .catch(err => console.log('Error:', err));
-            });
-        }
-    </script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#020617">
     <title>Golden Logistics Pro | Baraka Said</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;800&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #020617; --card: rgba(30, 41, 59, 0.4); --text: #f8fafc; --border: rgba(255,255,255,0.05); }
         .light-mode { --bg: #f1f5f9; --card: rgba(255, 255, 255, 0.8); --text: #0f172a; --border: rgba(0,0,0,0.1); }
-        body { font-family: 'Tajawal', 'Inter', sans-serif; background-color: var(--bg); color: var(--text); transition: all 0.3s ease; height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; position: fixed; margin: 0; }
-        .main-container { flex: 1; display: flex; flex-direction: column; padding: 8px; gap: 6px; height: 100%; max-width: 600px; margin: 0 auto; width: 100%; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); color: var(--text); height: 100vh; overflow: hidden; margin: 0; transition: background 0.3s; display: flex; flex-direction: column; }
         .glass-card { background: var(--card); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 12px; }
-        .table-wrapper { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-        table { width: 100%; height: 100%; table-layout: fixed; border-spacing: 2px; border-collapse: separate; }
-        td { height: calc(100% / 7); padding: 0 !important; }
-        .cell-container { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 6px; padding: 2px; }
-        .day-cell { color: #38bdf8; font-weight: 800; font-size: clamp(7px, 2vh, 9px); }
-        .time-header-text { font-size: clamp(6px, 1.5vh, 8px); color: #94a3b8; font-weight: bold; text-align: center; }
-        select { appearance: none; background: transparent; border: none; width: 100%; text-align: center; color: inherit; font-size: clamp(8px, 2vh, 10px); font-weight: bold; outline: none; }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            50% { transform: translateX(10px); }
-            75% { transform: translateX(-10px); }
-        }
-        .shake-error { animation: shake 0.4s ease-in-out; border-color: #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+        /* قسم المعلومات */
+        .info-grid { display: grid; grid-template-columns: 0.8fr 1fr 1fr 1fr; gap: 6px; min-height: 75px; margin-bottom: 10px; flex-shrink: 0; }
+        .info-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; text-align: center; border-bottom: 3px solid transparent; }
+        .info-label { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
+        .info-value { font-size: 11px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+
+        /* الجدول المتساوي - التعديل الجوهري هنا */
+        .table-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        table { width: 100%; height: 100%; table-layout: fixed; border-spacing: 4px; border-collapse: separate; }
+        th { font-size: 9px; padding-bottom: 4px; text-align: center; color: #64748b; }
+        td { height: calc(100% / 7); padding: 0; width: 25%; } /* تقسيم متساوٍ 25% لكل عمود */
         
-        .sidebar { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; position: fixed; inset-y: 0; width: 280px; background: var(--bg); border-inline-end: 1px solid var(--border); }
-        .sidebar.open { transform: translateX(0) !important; }
+        .cell-content { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .day-name { color: #38bdf8; font-weight: 800; font-size: 10px; }
+        select { background: transparent; border: none; width: 100%; text-align: center; color: inherit; font-size: 10px; font-weight: bold; outline: none; appearance: none; cursor: pointer; }
+        
+        /* القائمة الجانبية */
+        .sidebar { position: fixed; inset-y: 0; width: 280px; background: var(--bg); z-index: 1000; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-inline-end: 1px solid var(--border); }
         .rtl .sidebar { right: 0; transform: translateX(100%); }
+        .rtl .sidebar.open { transform: translateX(0); }
         .ltr .sidebar { left: 0; transform: translateX(-100%); }
-        .modal-overlay { z-index: 2000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-        .staff-info-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; text-align: center; border-inline-start: 1px solid var(--border); }
-        .staff-info-box:first-child { border: none; }
-        .call-btn { background: rgba(34, 197, 94, 0.2); padding: 3px; border-radius: 9999px; color: #4ade80; display: inline-flex; justify-content: center; align-items: center; margin-top: 2px; cursor: pointer; }
+        .ltr .sidebar.open { transform: translateX(0); }
+
+        #copyToast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 8px 20px; border-radius: 30px; font-size: 12px; font-weight: bold; z-index: 4000; display: none; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .error-shake { animation: shake 0.3s ease-in-out; }
+        .call-btn { background: rgba(34, 197, 94, 0.15); padding: 4px; border-radius: 50%; color: #4ade80; transition: 0.2s; border: none; cursor: pointer; }
     </style>
 </head>
 <body class="rtl">
 
-    <div id="sidebar" class="sidebar p-6 flex flex-col shadow-2xl overflow-y-auto">
+    <div id="copyToast">تم النسخ بنجاح!</div>
+
+    <div id="contactModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center z-[3000] p-6">
+        <div class="glass-card w-full max-w-xs p-6 text-center border-t-4 border-green-500">
+            <div class="mb-4 flex justify-center text-green-500">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-width="2"></path></svg>
+            </div>
+            <h3 id="contactName" class="text-white font-black text-lg mb-1">...</h3>
+            <p id="contactNumber" class="text-slate-400 font-mono text-sm mb-6">...</p>
+            <div class="flex flex-col gap-2">
+                <button id="copyActionBtn" class="w-full p-4 bg-green-500 text-white rounded-2xl text-xs font-black uppercase shadow-lg">نسخ الرقم</button>
+                <button onclick="closeContactModal()" class="w-full p-3 bg-slate-800 text-slate-400 rounded-xl text-xs font-bold uppercase">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar" class="sidebar p-6 flex flex-col shadow-2xl">
         <div class="flex justify-between items-center mb-8">
-            <span class="font-bold text-sky-500 tracking-widest uppercase text-sm" id="menuTitle">القائمة | Menu</span>
-            <button onclick="toggleSidebar()" class="text-slate-400 text-2xl">✕</button>
+            <span class="font-bold text-sky-500 text-sm tracking-widest">MENU | القائمة</span>
+            <button onclick="toggleSidebar()" class="text-2xl text-slate-400">✕</button>
         </div>
-        <div class="space-y-4">
-            <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-4 glass-card rounded-2xl text-xs font-bold">
-                <span id="themeLabel">الوضع | Mode</span><span id="themeIcon">🌙</span>
+        <div class="space-y-4 flex-1">
+            <button onclick="toggleTheme()" class="w-full flex justify-between p-4 glass-card rounded-xl text-xs font-bold">
+                <span>الوضع / Mode</span><span id="themeIcon">🌙</span>
             </button>
-            <button onclick="toggleLang()" class="w-full flex items-center justify-between p-4 glass-card rounded-2xl text-xs font-bold">
-                <span id="langLabel">اللغة | Language</span><span>🌍</span>
+            <button onclick="toggleLang()" class="w-full flex justify-between p-4 glass-card rounded-xl text-xs font-bold">
+                <span>اللغة / Langue</span><span>🌍</span>
             </button>
         </div>
-        <div class="mt-auto pt-8 border-t border-slate-800 text-center space-y-4">
-            <div class="bg-sky-500/5 p-4 rounded-2xl border border-sky-500/10">
-                <p class="text-[10px] text-sky-400 font-black uppercase mb-1">Developer</p>
+        <div class="pt-6 border-t border-slate-800 text-center">
+            <div class="bg-sky-500/5 p-4 rounded-xl mb-4 border border-sky-500/10">
+                <p class="text-[10px] text-sky-400 font-bold uppercase mb-1">Developer</p>
                 <p class="text-sm font-bold text-white">Baraka Said</p>
                 <p class="text-[9px] text-slate-500">techno.said.gt@gmail.com</p>
             </div>
-            <p class="text-[10px] text-sky-400/80 font-medium italic">اللهم اغفر لوالدتي وارحمها</p>
+            <p class="text-[10px] text-sky-400/80 italic font-medium">اللهم اغفر لوالدتي وارحمها</p>
         </div>
     </div>
 
-    <div id="passwordModal" class="modal-overlay fixed inset-0 hidden flex items-center justify-center p-6">
-        <div class="glass-card w-full max-w-xs p-6" id="passCard">
-            <h2 class="text-center font-black text-sky-500 mb-4 text-sm">تأكيد الهوية</h2>
-            <div class="relative mb-2">
-                <input type="password" id="passInput" class="w-full bg-slate-900/50 rounded-xl p-3 text-center text-white border border-slate-700 outline-none transition-all" placeholder="****">
-            </div>
-            <div class="flex gap-2">
-                <button onclick="closePasswordModal()" class="flex-1 p-2 rounded-xl bg-slate-700/50 text-xs font-bold">إلغاء</button>
-                <button onclick="verifyPassword()" class="flex-1 p-2 rounded-xl bg-sky-500 text-white text-xs font-bold">دخول</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="contactModal" class="modal-overlay fixed inset-0 hidden flex items-center justify-center p-6">
-        <div class="glass-card w-full max-w-xs p-6 text-center">
-            <h3 id="contactName" class="font-black text-lg mb-1">...</h3>
-            <p id="contactPhone" class="text-sky-400 font-mono text-xl mb-6 tracking-wider">...</p>
-            <button id="directCallBtn" class="w-full p-3 rounded-xl bg-green-500 text-white font-bold text-sm mb-2">اتصال مباشر</button>
-            <button onclick="closeModal('contactModal')" class="w-full p-2 rounded-xl bg-slate-700/50 text-xs font-bold">إغلاق</button>
-        </div>
-    </div>
-
-    <div class="main-container">
-        <header class="flex justify-between items-center px-1 h-12">
-            <button onclick="toggleSidebar()" class="p-2 glass-card rounded-xl text-sky-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" stroke-width="2.5"></path></svg>
+    <div class="p-2 h-full flex flex-col max-w-2xl mx-auto w-full">
+        <header class="flex justify-between items-center mb-2 px-1 flex-shrink-0">
+            <button onclick="toggleSidebar()" class="p-2 glass-card text-sky-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" stroke-width="2.5"></path></svg>
             </button>
             <div class="text-center">
-                <h1 class="text-[11px] font-black tracking-tighter uppercase leading-none">GOLDEN <span class="text-sky-500">LOGISTICS</span></h1>
-                <div id="headerDateTime" class="text-[9px] font-bold text-slate-500 mt-1 font-mono">...</div>
+                <h1 class="text-[11px] font-black tracking-widest uppercase">GOLDEN <span class="text-sky-500">LOGISTICS</span></h1>
+                <div id="clock" class="text-[10px] font-bold text-slate-500 font-mono"></div>
             </div>
-            <button onclick="handleEditClick()" id="editBtn" class="bg-sky-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase">تعديل</button>
+            <button onclick="handleEdit()" id="editBtn" class="bg-sky-500 text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-sky-500/20">تعديل</button>
         </header>
 
-        <div class="glass-card p-1 grid grid-cols-4 gap-0 border-r-4 border-sky-500 h-16">
-            <div class="flex flex-col justify-center items-center">
-                <label class="text-[5px] text-slate-500 font-bold uppercase" id="weekLabel">الأسبوع</label>
-                <select id="weekSelect" disabled onchange="manualWeekChange()" class="text-sky-500 font-bold text-[10px] bg-transparent outline-none">
+        <div class="info-grid">
+            <div class="glass-card info-box border-sky-500">
+                <span class="info-label text-slate-500" id="labelW">الأسبوع</span>
+                <select id="weekSelect" onchange="changeWeek()" disabled class="text-sky-500 font-black">
                     <option value="1">W 1</option><option value="2">W 2</option>
+                    <option value="3">W 3</option><option value="4">W 4</option>
                 </select>
             </div>
-            <div class="staff-info-box">
-                <span class="text-[5px] text-slate-500 font-bold uppercase" id="nowLabel">الحالي</span>
-                <span id="activeStaff" class="text-[8px] font-black text-green-400 truncate w-full px-1">...</span>
-                <div id="activeCallContainer" class="flex justify-center gap-1"></div>
+            <div class="glass-card info-box border-green-500">
+                <span class="info-label text-green-500" id="labelNow">الحالي</span>
+                <span id="activeStaff" class="info-value text-green-400">...</span>
+                <div id="callNow" class="flex gap-1 mt-1"></div>
             </div>
-            <div class="staff-info-box">
-                <span class="text-[5px] text-slate-500 font-bold uppercase" id="nextLabel">التالي</span>
-                <span id="nextStaff" class="text-[8px] font-black text-sky-400 truncate w-full px-1">...</span>
-                <div id="nextCallContainer" class="flex justify-center gap-1"></div>
+            <div class="glass-card info-box border-sky-400">
+                <span class="info-label text-sky-400" id="labelNext">التالي</span>
+                <span id="nextStaff" class="info-value text-sky-300">...</span>
+                <div id="callNext" class="flex gap-1 mt-1"></div>
             </div>
-            <div class="staff-info-box">
-                <span class="text-[5px] text-rose-500 font-bold uppercase" id="offLabel">في عطلة</span>
-                <span id="offStaff" class="text-[8px] font-black text-rose-400 truncate w-full px-1">...</span>
-                <div id="offCallContainer" class="flex justify-center gap-1"></div>
+            <div class="glass-card info-box border-rose-500">
+                <span class="info-label text-rose-500" id="labelOff">العطلة</span>
+                <span id="offStaff" class="info-value text-rose-400">...</span>
             </div>
         </div>
 
-        <div class="table-wrapper">
+        <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th><div class="time-header-text" id="thDay">اليوم</div></th>
-                        <th><div class="time-header-text">09:00-16:00</div></th>
-                        <th><div class="time-header-text">16:00-01:00</div></th>
-                        <th><div class="time-header-text">01:00-09:00</div></th>
+                        <th id="thDay">اليوم</th>
+                        <th>09:00-16:00</th>
+                        <th>16:00-01:00</th>
+                        <th>01:00-09:00</th>
                     </tr>
                 </thead>
-                <tbody id="scheduleBody"></tbody>
+                <tbody id="tableBody"></tbody>
             </table>
         </div>
     </div>
 
+    <div id="passModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-[2000] p-6">
+        <div id="passCard" class="glass-card w-full max-w-xs p-6 text-center border-t-4 border-sky-500 transition-all duration-300">
+            <div id="errorIcon" class="hidden mb-4 justify-center text-rose-500">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2"></path></svg>
+            </div>
+            <h2 id="passTitle" class="text-sky-500 font-black mb-4 text-sm uppercase tracking-widest">Security Check</h2>
+            <input type="password" id="passInput" class="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-center mb-4 text-white outline-none focus:border-sky-500 transition-all" placeholder="••••">
+            <div class="flex gap-2">
+                <button onclick="closeModal()" class="flex-1 p-3 bg-slate-800 rounded-xl text-xs font-bold uppercase">إلغاء</button>
+                <button onclick="checkPass()" class="flex-1 p-3 bg-sky-500 rounded-xl text-xs font-bold uppercase text-white">دخول</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const phoneBook = { "Youness": "0697277839", "Said": "0663775910", "Mohamed": "0668344926", "Youssef": "+212707760899" };
-        const allStaffNames = ["Youness", "Mohamed", "Said", "Youssef"];
-        const translations = { 
-            ar: { edit: "تعديل", save: "حفظ", days: ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"], now: "الحالي", next: "التالي", off: "في عطلة", week: "الأسبوع" }, 
-            fr: { edit: "Modifier", save: "Sauver", days: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"], now: "Actuel", next: "Suivant", off: "En Congé", week: "Semaine" } 
+        const phoneBook = { "Youness": "0697277839", "Said": "https://wa.me/qr/LFD2FXYV7HALL1", "Mohamed": "0668344926", "Youssef": "+212707760899" };
+        const staffNames = ["Youness", "Mohamed", "Said", "Youssef"];
+        const trans = {
+            ar: { days: ["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"], edit: "تعديل", save: "حفظ", now: "الحالي", next: "التالي", off: "العطلة", w: "الأسبوع", day: "اليوم" },
+            fr: { days: ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"], edit: "Modifier", save: "Sauver", now: "Actuel", next: "Suivant", off: "Repos", w: "Semaine", day: "Jour" }
         };
 
-        let currentLang = localStorage.getItem('g_lang') || 'ar';
-        let userThemePref = localStorage.getItem('g_theme_pref') || 'dark';
-        let isEditMode = false;
-        
-        // حساب الأسبوع الحالي (الأول أو الثاني)
-        function getCurrentWeek() {
-            const now = new Date();
-            const startOfYear = new Date(now.getFullYear(), 0, 1);
-            const days = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000));
-            const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-            return (weekNumber % 2 === 0) ? "2" : "1";
-        }
-
-        let selectedWeek = localStorage.getItem('g_saved_week') || getCurrentWeek();
-
-        // بيانات الجدول حسب طلبك
-        const defaultSchedule = [
-            { s1: ["Youness", "Said"], s2: "Mohamed", s3: "Youssef" }, // Mon
-            { s1: ["Said", "Youness"], s2: "Mohamed", s3: "Youssef" }, // Tue
-            { s1: ["Mohamed", "Youness"], s2: "None", s3: "Youssef" }, // Wed
-            { s1: ["Said", "None"], s2: "Youness", s3: "Youssef" },     // Thu
-            { s1: ["Youness", "None"], s2: "Mohamed", s3: "Youssef" }, // Fri
-            { s1: ["Mohamed", "None"], s2: "Said", s3: "Youness" },    // Sat
-            { s1: ["Said", "None"], s2: "Mohamed", s3: "Youssef" }     // Sun
-        ];
+        let lang = localStorage.getItem('g_lang') || 'ar';
+        let theme = localStorage.getItem('g_theme') || 'dark';
+        let isEdit = false;
+        let week = localStorage.getItem('g_week') || "1";
 
         function initData() {
-            if(!localStorage.getItem('goldenData')) {
-                const initial = { "1": [...defaultSchedule], "2": [...defaultSchedule] };
-                localStorage.setItem('goldenData', JSON.stringify(initial));
+            if(!localStorage.getItem('g_data')) {
+                const dayTemplate = { s1: ["Youness", "Said"], s2: "Mohamed", s3: "Youssef" };
+                const weekData = Array(7).fill(null).map(() => JSON.parse(JSON.stringify(dayTemplate)));
+                localStorage.setItem('g_data', JSON.stringify({ "1": weekData, "2": weekData, "3": weekData, "4": weekData }));
             }
         }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-
-        function verifyPassword() {
-            const input = document.getElementById('passInput');
-            if (input.value === "1990") {
-                isEditMode = true;
-                document.getElementById('weekSelect').disabled = false;
-                closeModal('passwordModal');
-                applySettings();
-            } else {
-                input.classList.add('shake-error');
-                setTimeout(() => input.classList.remove('shake-error'), 400);
+        function closeModal() { document.getElementById('passModal').classList.add('hidden'); resetErrorState(); document.getElementById('passInput').value=""; }
+        function closeContactModal() { document.getElementById('contactModal').classList.add('hidden'); }
+        
+        function handleAction(name) {
+            const contact = phoneBook[name.trim()];
+            if (!contact) return;
+            if (contact.startsWith('http')) { window.open(contact, '_blank'); } 
+            else {
+                document.getElementById('contactName').innerText = name;
+                document.getElementById('contactNumber').innerText = contact;
+                document.getElementById('contactModal').classList.remove('hidden');
+                document.getElementById('copyActionBtn').onclick = () => {
+                    navigator.clipboard.writeText(contact).then(() => { showToast(); closeContactModal(); });
+                };
             }
         }
 
-        function handleEditClick() {
-            if (isEditMode) {
-                isEditMode = false;
-                document.getElementById('weekSelect').disabled = true;
-                localStorage.setItem('g_saved_week', selectedWeek);
-                applySettings();
-            } else openModal('passwordModal');
+        function showToast() {
+            const toast = document.getElementById('copyToast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
         }
 
-        function updateDateTime() {
-            const now = new Date();
-            const dayName = translations[currentLang].days[(now.getDay() + 6) % 7];
-            document.getElementById('headerDateTime').innerText = `${dayName} | ${now.toLocaleTimeString('en-GB', { hour12: false })}`;
-            updateActiveStaff();
+        function handleEdit() {
+            if(isEdit) { isEdit = false; updateUI(); } 
+            else { document.getElementById('passModal').classList.remove('hidden'); document.getElementById('passInput').focus(); }
         }
 
-        function applySettings() {
-            document.getElementById('mainHtml').dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            document.body.className = (currentLang === 'ar' ? 'rtl ' : 'ltr ') + (userThemePref === 'light' ? 'light-mode' : '');
-            document.getElementById('editBtn').innerText = isEditMode ? translations[currentLang].save : translations[currentLang].edit;
-            
-            // تحديث العناوين
-            document.getElementById('nowLabel').innerText = translations[currentLang].now;
-            document.getElementById('nextLabel').innerText = translations[currentLang].next;
-            document.getElementById('offLabel').innerText = translations[currentLang].off;
-            document.getElementById('weekLabel').innerText = translations[currentLang].week;
-            document.getElementById('thDay').innerText = translations[currentLang].days[0].includes('الاثنين') ? 'اليوم' : 'Jour';
-
-            renderTable();
+        function resetErrorState() {
+            const card = document.getElementById('passCard');
+            const errIcon = document.getElementById('errorIcon');
+            const title = document.getElementById('passTitle');
+            card.style.borderColor = ""; errIcon.classList.add('hidden');
+            title.classList.replace('text-rose-500', 'text-sky-500');
         }
 
-        function renderTable() {
-            const data = JSON.parse(localStorage.getItem('goldenData'))[selectedWeek];
-            document.getElementById('scheduleBody').innerHTML = data.map((row, i) => `
+        function checkPass() {
+            const inp = document.getElementById('passInput');
+            const card = document.getElementById('passCard');
+            const errIcon = document.getElementById('errorIcon');
+            const title = document.getElementById('passTitle');
+            if(inp.value === "1990") { isEdit = true; closeModal(); updateUI(); } 
+            else { 
+                card.classList.add('error-shake');
+                card.style.borderColor = "#ef4444";
+                errIcon.classList.remove('hidden');
+                title.classList.replace('text-sky-500', 'text-rose-500');
+                setTimeout(() => { inp.value = ""; card.classList.remove('error-shake'); }, 600);
+            }
+        }
+
+        function updateUI() {
+            const t = trans[lang];
+            document.body.className = (lang === 'ar' ? 'rtl ' : 'ltr ') + (theme === 'light' ? 'light-mode' : '');
+            document.getElementById('editBtn').innerText = isEdit ? t.save : t.edit;
+            document.getElementById('weekSelect').disabled = !isEdit;
+            document.getElementById('labelW').innerText = t.w;
+            document.getElementById('labelNow').innerText = t.now;
+            document.getElementById('labelNext').innerText = t.next;
+            document.getElementById('labelOff').innerText = t.off;
+            document.getElementById('thDay').innerText = t.day;
+
+            const data = JSON.parse(localStorage.getItem('g_data'))[week];
+            document.getElementById('tableBody').innerHTML = data.map((d, i) => `
                 <tr>
-                    <td><div class="glass-card cell-container day-cell">${translations[currentLang].days[i]}</div></td>
-                    <td><div class="glass-card cell-container">
-                        <select ${!isEditMode?'disabled':''} onchange="updateData(${i},'s1',0,this.value)">${allStaffNames.concat("None").map(s => `<option ${s===row.s1[0]?'selected':''} value="${s}">${s}</option>`).join('')}</select>
-                        <div class='h-[1px] w-4/5 bg-sky-500/20 my-0.5'></div>
-                        <select ${!isEditMode?'disabled':''} onchange="updateData(${i},'s1',1,this.value)">${allStaffNames.concat("None").map(s => `<option ${s===row.s1[1]?'selected':''} value="${s}">${s}</option>`).join('')}</select>
-                    </div></td>
-                    <td><div class="glass-card cell-container"><select ${!isEditMode?'disabled':''} onchange="updateData(${i},'s2',null,this.value)">${allStaffNames.concat("None").map(s => `<option ${s===row.s2?'selected':''} value="${s}">${s}</option>`).join('')}</select></div></td>
-                    <td><div class="glass-card cell-container"><select ${!isEditMode?'disabled':''} onchange="updateData(${i},'s3',null,this.value)">${allStaffNames.concat("None").map(s => `<option ${s===row.s3?'selected':''} value="${s}">${s}</option>`).join('')}</select></div></td>
+                    <td class="glass-card"><div class="cell-content"><span class="day-name">${t.days[i]}</span></div></td>
+                    <td class="glass-card">
+                        <div class="cell-content gap-1">
+                            <select ${!isEdit?'disabled':''} class="text-sky-400" onchange="saveData(${i},'s1',0,this.value)">${staffNames.concat("None").map(s=>`<option ${s==d.s1[0]?'selected':''}>${s}</option>`).join('')}</select>
+                            <div class="w-2/3 h-[1px] bg-white/10"></div>
+                            <select ${!isEdit?'disabled':''} class="text-sky-400" onchange="saveData(${i},'s1',1,this.value)">${staffNames.concat("None").map(s=>`<option ${s==d.s1[1]?'selected':''}>${s}</option>`).join('')}</select>
+                        </div>
+                    </td>
+                    <td class="glass-card"><div class="cell-content"><select ${!isEdit?'disabled':''} class="text-orange-400" onchange="saveData(${i},'s2',null,this.value)">${staffNames.concat("None").map(s=>`<option ${s==d.s2?'selected':''}>${s}</option>`).join('')}</select></div></td>
+                    <td class="glass-card"><div class="cell-content"><select ${!isEdit?'disabled':''} class="text-purple-400" onchange="saveData(${i},'s3',null,this.value)">${staffNames.concat("None").map(s=>`<option ${s==d.s3?'selected':''}>${s}</option>`).join('')}</select></div></td>
                 </tr>
             `).join('');
-            updateActiveStaff();
+            refreshLiveInfo();
         }
 
-        function updateActiveStaff() {
-            const now = new Date(); const hour = now.getHours(); const todayIdx = (now.getDay() + 6) % 7;
-            const weekData = JSON.parse(localStorage.getItem('goldenData'))[selectedWeek];
-            if(!weekData) return;
-            const today = weekData[todayIdx];
-            
-            let active = (hour >= 9 && hour < 16) ? (today.s1[0] + " & " + today.s1[1]) : (hour >= 16 || hour < 1 ? today.s2 : today.s3);
-            
-            const workers = [today.s1[0], today.s1[1], today.s2, today.s3];
-            const offList = allStaffNames.filter(name => !workers.includes(name));
-
-            document.getElementById('activeStaff').innerText = active.replace(/ & None|None & /g, "");
-            document.getElementById('offStaff').innerText = offList.length > 0 ? offList.join(" & ") : "None";
-            
-            const getIcon = (txt) => txt.split(" & ").filter(n => n !== "None").map(n => phoneBook[n.trim()] ? `<button onclick="showContact('${n.trim()}')" class="call-btn"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg></button>` : "").join("");
-            document.getElementById('activeCallContainer').innerHTML = getIcon(active);
-            document.getElementById('offCallContainer').innerHTML = getIcon(offList.join(" & "));
+        function refreshLiveInfo() {
+            const now = new Date();
+            const hour = now.getHours();
+            const dayIdx = (now.getDay() + 6) % 7;
+            const data = JSON.parse(localStorage.getItem('g_data'))[week][dayIdx];
+            let cur = "", nxt = "";
+            if(hour >= 9 && hour < 16) { cur = data.s1.join(" & "); nxt = data.s2; }
+            else if(hour >= 16 || hour < 1) { cur = data.s2; nxt = data.s3; }
+            else { cur = data.s3; nxt = data.s1.join(" & "); }
+            const clean = (s) => s.replace(/None| & None|None & /g, "").trim() || "...";
+            document.getElementById('activeStaff').innerText = clean(cur);
+            document.getElementById('nextStaff').innerText = clean(nxt);
+            const todayAll = [...data.s1, data.s2, data.s3];
+            const off = staffNames.filter(s => !todayAll.includes(s));
+            document.getElementById('offStaff').innerText = off.join(" & ") || "None";
+            const callIcon = (n) => `<button onclick="handleAction('${n.trim()}')" class="call-btn"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg></button>`;
+            document.getElementById('callNow').innerHTML = clean(cur).split("&").map(n => phoneBook[n.trim()] ? callIcon(n) : "").join("");
+            document.getElementById('callNext').innerHTML = clean(nxt).split("&").map(n => phoneBook[n.trim()] ? callIcon(n) : "").join("");
         }
 
-        function updateData(dayI, shift, pI, val) {
-            let data = JSON.parse(localStorage.getItem('goldenData'));
-            if(pI !== null) data[selectedWeek][dayI][shift][pI] = val; else data[selectedWeek][dayI][shift] = val;
-            localStorage.setItem('goldenData', JSON.stringify(data));
-            updateActiveStaff();
+        function saveData(day, shift, sub, val) {
+            let all = JSON.parse(localStorage.getItem('g_data'));
+            if(sub === null) all[week][day][shift] = val; else all[week][day][shift][sub] = val;
+            localStorage.setItem('g_data', JSON.stringify(all));
+            refreshLiveInfo();
         }
 
-        function showContact(name) { 
-            const num = phoneBook[name];
-            document.getElementById('contactName').innerText = name; 
-            document.getElementById('contactPhone').innerText = num; 
-            document.getElementById('directCallBtn').onclick = () => window.location.href=`tel:${num}`;
-            openModal('contactModal'); 
-        }
+        function changeWeek() { week = document.getElementById('weekSelect').value; localStorage.setItem('g_week', week); updateUI(); }
+        function toggleLang() { lang = lang === 'ar' ? 'fr' : 'ar'; localStorage.setItem('g_lang', lang); updateUI(); }
+        function toggleTheme() { theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('g_theme', theme); updateUI(); }
 
-        function manualWeekChange() { selectedWeek = document.getElementById('weekSelect').value; renderTable(); }
-        function toggleLang() { currentLang = currentLang === 'ar' ? 'fr' : 'ar'; localStorage.setItem('g_lang', currentLang); applySettings(); }
-        function toggleTheme() { userThemePref = userThemePref === 'light' ? 'dark' : 'light'; localStorage.setItem('g_theme_pref', userThemePref); applySettings(); }
-
-        window.onload = () => { 
+        window.onload = () => {
             initData();
-            document.getElementById('weekSelect').value = selectedWeek; 
-            applySettings(); 
-            setInterval(updateDateTime, 1000);
+            document.getElementById('weekSelect').value = week;
+            updateUI();
+            setInterval(() => {
+                const n = new Date();
+                const dayStr = n.toLocaleDateString(lang === 'ar' ? 'ar-MA' : 'fr-FR', { weekday: 'long' });
+                const timeStr = n.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                document.getElementById('clock').innerText = `${dayStr} | ${timeStr}`;
+                if(n.getMinutes() === 0 && n.getSeconds() === 0) refreshLiveInfo();
+            }, 1000);
         };
     </script>
 </body>
