@@ -1,22 +1,36 @@
 /* =========================================
-   1. الإعدادات والجدول المعتمد للأسابيع الأربعة
+   1. الإعدادات والجدول المعتمد مع التدوير (Rotation)
    ========================================= */
 
-const MY_SCHEDULE = [
-    { s1: ["Said", "Mohamed"], s2: "Youness", s3: "Youssef" }, 
-    { s1: ["Said", "Youness"], s2: "Mohamed", s3: "Youssef" }, 
-    { s1: ["Youness", "Mohamed"], s2: "Said", s3: "Youssef" }, 
-    { s1: ["Said", "None"], s2: "Youness", s3: "Youssef" },    
-    { s1: ["Youness", "None"], s2: "Mohamed", s3: "Youssef" }, 
-    { s1: ["Mohamed", "None"], s2: "Said", s3: "Youness" },    
-    { s1: ["Said", "None"], s2: "Mohamed", s3: "Youssef" }     
+// الأسبوع الأول (الأساسي)
+const WEEK_1_BASE = [
+    { s1: ["Said", "Mohamed"], s2: "Youness", s3: "Youssef" }, // الاثنين
+    { s1: ["Said", "Youness"], s2: "Mohamed", s3: "Youssef" }, // الثلاثاء
+    { s1: ["Youness", "Mohamed"], s2: "Said", s3: "Youssef" }, // الأربعاء
+    { s1: ["Said", "None"], s2: "Youness", s3: "Youssef" },    // الخميس
+    { s1: ["Youness", "None"], s2: "Mohamed", s3: "Youssef" }, // الجمعة
+    { s1: ["Mohamed", "None"], s2: "Said", s3: "Youness" },    // السبت
+    { s1: ["Said", "None"], s2: "Mohamed", s3: "Youssef" }     // الأحد
 ];
 
+// وظيفة التبديل بين الأسماء لإنشاء الأسابيع الأخرى
+function rotateSchedule(base, nameA, nameB) {
+    return base.map(day => {
+        const newDay = JSON.parse(JSON.stringify(day));
+        // تبديل في النوبة الأولى (المصفوفة)
+        newDay.s1 = newDay.s1.map(name => name === nameA ? nameB : (name === nameB ? nameA : name));
+        // تبديل في النوبة الثانية والثالثة
+        if(newDay.s2 === nameA) newDay.s2 = nameB; else if(newDay.s2 === nameB) newDay.s2 = nameA;
+        if(newDay.s3 === nameA) newDay.s3 = nameB; else if(newDay.s3 === nameB) newDay.s3 = nameA;
+        return newDay;
+    });
+}
+
 const DEFAULT_ROSTER = {
-    "1": JSON.parse(JSON.stringify(MY_SCHEDULE)),
-    "2": JSON.parse(JSON.stringify(MY_SCHEDULE)),
-    "3": JSON.parse(JSON.stringify(MY_SCHEDULE)),
-    "4": JSON.parse(JSON.stringify(MY_SCHEDULE))
+    "1": WEEK_1_BASE, // الأسبوع الأول كما هو
+    "2": rotateSchedule(WEEK_1_BASE, "Said", "Youness"), // الأسبوع الثاني: بدل سعيد ويونس
+    "3": rotateSchedule(WEEK_1_BASE, "Said", "Mohamed"), // الأسبوع الثالث: بدل سعيد ومحمد
+    "4": WEEK_1_BASE  // الأسبوع الرابع: عد للأسبوع الأول
 };
 
 const SCHEDULE_CONFIG = {
@@ -32,14 +46,14 @@ const phoneBook = {
     "Youness": "0697277839", 
     "Said": "https://wa.me/qr/LFD2FXYV7HALL1", 
     "Mohamed": "0668344926", 
-    "Youssef": "0707760899" 
+    "Youssef": "+212707760899" 
 };
 
 const staffNames = ["Youness", "Mohamed", "Said", "Youssef"];
 
 const trans = {
-    ar: { days: ["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"], edit: "تعديل", save: "حفظ", now: "الحالي", next: "التالي", off: "العطلة", w: "الأسبوع", day: "اليوم", resetConfirm: "هل تريد حقاً إعادة ضبط كافة البيانات؟" },
-    fr: { days: ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"], edit: "Modifier", save: "Sauver", now: "Actuel", next: "Suivant", off: "Repos", w: "Semaine", day: "Jour", resetConfirm: "Réinitialiser toutes les données ?" }
+    ar: { days: ["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"], edit: "تعديل", save: "حفظ", now: "الحالي", next: "التالي", off: "العطلة", w: "الأسبوع", day: "اليوم", resetConfirm: "هل تريد حقاً إعادة ضبط كافة البيانات لتطبيق التدوير الجديد؟" },
+    fr: { days: ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"], edit: "Modifier", save: "Sauver", now: "Actuel", next: "Suivant", off: "Repos", w: "Semaine", day: "Jour", resetConfirm: "Réinitialiser pour appliquer la rotation ?" }
 };
 
 let lang = localStorage.getItem('g_lang') || 'ar', theme = localStorage.getItem('g_theme') || 'dark', isEdit = false;
@@ -168,22 +182,14 @@ function saveData(day, shift, sub, val) {
     refreshLiveInfo();
 }
 
-/* =========================================
-   3. تحديث الساعة واليوم (Clock & Day)
-   ========================================= */
 window.onload = () => {
     initData(); 
     updateUI();
     setInterval(() => {
         const n = new Date();
         const locale = lang === 'ar' ? 'ar-MA' : 'fr-FR';
-        
-        // جلب اسم اليوم
         const dayName = n.toLocaleDateString(locale, { weekday: 'long' });
-        // جلب الساعة
         const timeStr = n.toLocaleTimeString(locale);
-        
-        // دمج اليوم مع الساعة
         document.getElementById('clock').innerText = `${dayName} | ${timeStr}`;
     }, 1000);
 };
