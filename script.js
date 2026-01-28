@@ -32,7 +32,7 @@ const phoneBook = {
     "Youness": "0697277839", 
     "Said": "https://wa.me/qr/LFD2FXYV7HALL1", 
     "Mohamed": "0668344926", 
-    "Youssef": "+212707760899" 
+    "Youssef": "0707760899" 
 };
 
 const staffNames = ["Youness", "Mohamed", "Said", "Youssef"];
