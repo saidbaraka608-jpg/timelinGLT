@@ -28,7 +28,7 @@ const DEFAULT_ROSTER = {
     "4": WEEK_1_BASE
 };
 
-const phoneBook = { "Youness": "0697277839", "Said": "https://wa.me/qr/LFD2FXYV7HALL1", "Mohamed": "0668344926", "Youssef": "07760899" };
+const phoneBook = { "Youness": "0697277839", "Said": "0663775910", "Mohamed": "0668344926", "Youssef": "070760899" };
 const staffNames = ["Youness", "Mohamed", "Said", "Youssef"];
 const trans = {
     ar: { days: ["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"], edit: "تعديل", save: "حفظ", now: "الحالي", next: "التالي", off: "العطلة", w: "الأسبوع", day: "اليوم", resetConfirm: "إعادة ضبط لتصحيح التوقيت؟" },
