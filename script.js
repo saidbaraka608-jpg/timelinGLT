@@ -137,7 +137,7 @@ function handleEdit() { if(isEdit) { isEdit=false; updateUI(); } else { document
 
 function checkPass() {
     const inp = document.getElementById('passInput'), card = document.getElementById('passCard');
-    if(inp.value === "1990") { isEdit = true; closeModal(); updateUI(); } 
+    if(inp.value === "2022") { isEdit = true; closeModal(); updateUI(); } 
     else { card.classList.add('error-shake'); setTimeout(() => { inp.value = ""; card.classList.remove('error-shake'); }, 600); }
 }
 
